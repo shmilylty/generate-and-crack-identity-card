@@ -5,7 +5,6 @@
 # blog:hackfun.org
 
 import sys
-import os
 import datetime
 import time
 import urllib2
@@ -17,19 +16,33 @@ current_date = datetime.datetime.now().strftime('%Y%m%d')
 current_year = datetime.datetime.now().year
 appkey = ['db6fb1f5ae343974296cece35e047218', '6d21a53c6bf995e82980c731e32af339','bbefe459287faab66731a970d9c85328', 
           'bf3dc06b9c1f1fce3c7fddf88be8ebee', 'eddcee3a76d0e5e267044bafbc5b393a', '16285d8106d1500ba77f8473dab75213']
-fail_code = {
+fail_msg = {
     11: '参数不正确',
     12: '商户余额不足',
     13: 'appkey不存在',
     14: 'IP被拒绝',
     20: '身份证中心维护中'
 }
-success_code = {
+success_msg = {
     1: '一致',
     2: '不一致',
     3: '无此身份证号码'
 }
 
+def set_coding():
+    encoding = 'utf-8'
+    if sys.getdefaultencoding() != encoding:
+        reload(sys)
+        sys.setdefaultencoding(encoding)
+
+
+def set_input_coding(coding):
+    coding = coding.decode(sys.stdin.encoding)
+    return coding
+
+def set_output_coding(coding):
+    coding = coding.encode(sys.stdout.encoding)
+    return coding
 
 def find_ID_card(name):
     print('[~] The program is cracking the ID card number.')
@@ -46,20 +59,20 @@ def find_ID_card(name):
             request = requests.get(url, params=data)
             json_data = request.json()
             if json_data['isok'] == 0:
-                print(fail_code[json_data['code']])
+                print(set_output_coding(fail_msg[json_data['code']]))
                 exit(1)
             with open('query.log', 'a') as log_file:
                 current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 log = current_time + '  ' + request.url + '  ' + cardno + \
-                    '  ' + name + '  ' + success_code[json_data['code']]
+                    '  ' + name + '  ' + success_msg[json_data['code']] + '\n'
                 log_file.write(log)
             if json_data['isok'] == 1:
                 print(
-                    '[>] The program has found the id number successfully -> name:%s ID card number:%s') % (name, cardno)
+                    '[>] The program has found the id number successfully -> name:%s ID card number:%s') % (set_output_coding(name), set_output_coding(cardno))
                 exit(0)
 
 
-def generate_ID_card(divison_code, bithday, name, sex):
+def generate_ID_card(divison_code, bithday, sex, name):
     print('[~] The program is creating the ID card number.')
     probable_ID_infos = ''
     factor = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
@@ -72,20 +85,19 @@ def generate_ID_card(divison_code, bithday, name, sex):
                 checksum += int(ID_card_base[i]) * factor[i]
             mod = checksum % 11
             check_code = verify_number_list[mod]
-            probable_ID_number = ID_card_base + check_code + '  '
+            probable_ID_number = ID_card_base + check_code + '\t'
             sex = '  男  '
-            age = str(current_year - int(bithday[0:4])) + '  '
+            age = str(current_year - int(bithday[0:4])) + '\t'
             province = divison_codes[divison_code[0:2] + '0000']
             city = divison_codes[divison_code[0:4] + '00']
             county = divison_codes[divison_code]
-            address = province + ' ' + city + ' ' + county + ' '
+            address = province + city + county
             probable_ID_info = probable_ID_number + name + sex + age + address + '\n'
             probable_ID_infos += probable_ID_info
         with open('probable_ID_card.txt', 'w') as card_file:
             card_file.write(probable_ID_infos)
             card_file.close
-        print('[~] The program has generated all ID numbers.')
-        print('[>] Generated  ID card file: probable_ID_card.txt')
+        print('[>] The program has generated all ID numbers -> probable_ID_card.txt')
     elif sex == 'woman':
         for sequence_code in xrange(0, 1000, 2):
             ID_card_base = divison_code + bithday + str(sequence_code).zfill(3)
@@ -94,13 +106,13 @@ def generate_ID_card(divison_code, bithday, name, sex):
                 checksum += int(ID_card_base[i]) * factor[i]
             mod = checksum % 11
             check_code = verify_number_list[mod]
-            probable_ID_number = ID_card_base + check_code + '  '
+            probable_ID_number = ID_card_base + check_code + '\t'
             sex = '  女  '
-            age = str(current_year - int(bithday[0:4])) + '  '
+            age = str(current_year - int(bithday[0:4])) + '\t'
             province = divison_codes[divison_code[0:2] + '0000']
             city = divison_codes[divison_code[0:4] + '00']
             county = divison_codes[divison_code]
-            address = province + '  ' + city + '  ' + county + '  '
+            address = province + city + county
             probable_ID_info = probable_ID_number + name + sex + age + address + '\n'
             probable_ID_infos += probable_ID_info
         with open('probable_ID_card.txt', 'w') as card_file:
@@ -124,7 +136,7 @@ def sex_check(sex):
 
 
 def name_check(name):
-    for char in name.decode('utf-8'):
+    for char in name:
         if char < u'\u4e00' or char > u'\u9fa5':
             print('[!] Please input "valid" name.')
             exit(1)
@@ -174,27 +186,24 @@ def divison_code_check(divison_code):
 
 def get_input():
     divison_code = raw_input('[*] Input administrative division codes:')
+    divison_code = set_input_coding(divison_code)
     divison_code = divison_code_check(divison_code)
     bithday = raw_input('[*] Input bithday:')
+    bithday = set_input_coding(bithday)
     bithday = bithday_check(bithday)
-    name = raw_input('[*] Input name:')
-    name = name_check(name)
     sex = raw_input('[*] Input sex (man or woman):')
+    sex = set_input_coding(sex)
     sex = sex_check(sex)
-    return divison_code, bithday, name, sex
-
-
-def set_coding():
-    encoding = 'utf-8'
-    if sys.getdefaultencoding() != encoding:
-        reload(sys)
-        sys.setdefaultencoding(encoding)
+    name = raw_input('[*] Input chinese name:')
+    name = set_input_coding(name)
+    name = name_check(name)
+    return divison_code, bithday, sex, name
 
 
 def main():
     set_coding()
-    divison_code, bithday, name, sex = get_input()
-    generate_ID_card(divison_code, bithday, name, sex)
+    divison_code, bithday, sex, name = get_input()
+    generate_ID_card(divison_code, bithday, sex, name)
     find_ID_card(name)
 
 if __name__ == '__main__':
