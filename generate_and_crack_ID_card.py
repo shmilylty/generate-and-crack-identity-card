@@ -28,7 +28,7 @@ success_msg = {1: 'Consistent.',
                2: 'Inconsistent.',
                3: 'Does not exist this ID card No.'}
 fail_msg = {11: 'Incorrect parameter.',
-            12: 'Insufficient Balance.',
+            12: 'Insufficient balance.',
             13: 'The appkey inexistent.',
             14: 'IP was rejected.',
             20: 'The server is in maintenance.'}
@@ -100,7 +100,7 @@ def generate_ID_card(divison_code, bithday, sex, name):
         with open('probable_ID_card.txt', 'w') as card_file:
             card_file.write(probable_ID_infos)
             card_file.close
-        print '[>] The program has generated all ID numbers -> probable_ID_card.txt'
+        print '[>] The program has generated all ID card numbers -> probable_ID_card.txt'
     elif sex == 'woman':
         for sequence_code in xrange(0, 1000, 2):
             ID_card_base = divison_code + bithday + str(sequence_code).zfill(3)
