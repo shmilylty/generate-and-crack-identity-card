@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-# author:4ido10n[@gmail.com]
+# author:admin[@hackfun.org]
 # license:GPL v3
 # blog:hackfun.org
 
